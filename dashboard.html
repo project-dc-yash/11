@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Accident Alert | Emergency Dashboard</title>
+    <style>
+        :root { --danger: #ff4757; --dark: #1e272e; --success: #2ecc71; --warning: #f1c40f; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; height: 100vh; overflow: hidden;}
+        
+        /* Sidebar */
+        .sidebar { width: 280px; background: var(--dark); color: white; padding: 25px; display: flex; flex-direction: column; }
+        .sidebar h2 { color: var(--danger); font-size: 20px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+
+        /* Main Panel */
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+        .header { background: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px;}
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
+
+        /* Sensor Display */
+        .sensor-row { display: flex; justify-content: space-between; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px; border-left: 6px solid var(--danger); }
+        .val { font-size: 28px; font-weight: bold; color: var(--dark); }
+
+        /* Control Buttons */
+        .btn { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; text-transform: uppercase; transition: 0.3s; }
+        .btn-alert { background: var(--danger); color: white; font-size: 16px; }
+        .btn-stop { background: #7f8c8d; color: white; margin-top: 5px; }
+        .btn-alert:hover { background: #c0392b; transform: scale(1.02); }
+
+        /* Emergency State */
+        .emergency-bg { background: #ffeaea !important; border: 2px solid var(--danger); }
+        .flashing { animation: blink 0.5s infinite; color: var(--danger); font-weight: bold; }
+        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.3;} 100% {opacity: 1;} }
+        
+        .img-container img { width: 100%; border-radius: 10px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>RESCUE OPS</h2>
+        <p>Status: <span id="sys-status" style="color:var(--success)">● STANDBY</span></p>
+        <hr style="width: 100%; opacity: 0.1;">
+        
+        <label style="font-size: 12px; margin-bottom: 5px;">MANUAL OVERRIDE:</label>
+        <button class="btn btn-alert" onclick="triggerAccident()">🚨 TRIGGER ACCIDENT</button>
+        <button class="btn btn-stop" onclick="stopSiren()">SILENCE BUZZER</button>
+        
+        <div style="margin-top: auto; font-size: 11px; opacity: 0.5;">
+            Device ID: ESP32-ACC-01<br>
+            Location: JSPM JSCOE
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header" id="statusHeader">
+            <h1 id="alertTitle" style="margin:0;">Safety Monitoring System</h1>
+            <div id="liveTime">Searching for signals...</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Hardware Architecture</h3>
+                <p style="font-size: 13px; color: #666;">MPU6050 Accelerometer + DHT11 Sensor</p>
+                <div class="img-container">
+                    <img src="image_04c5a4.png" alt="Accident Alert System Diagram">
+                </div>
+            </div>
+
+            <div class="card" id="dataCard">
+                <h3>Live Sensor Stream</h3>
+                <div class="sensor-row">
+                    <span>Impact Force (MPU6050)</span>
+                    <span class="val" id="accVal">0.12 <small style="font-size: 12px;">G</small></span>
+                </div>
+                <div class="sensor-row" style="border-left-color: #3498db;">
+                    <span>Temp (DHT11)</span>
+                    <span class="val">29 <small style="font-size: 12px;">°C</small></span>
+                </div>
+                <div class="sensor-row" style="border-left-color: #27ae60;">
+                    <span>Humidity</span>
+                    <span class="val">58 <small style="font-size: 12px;">%</small></span>
+                </div>
+                <div class="sensor-row" style="border-left-color: #f1c40f;">
+                    <span>Coordinates</span>
+                    <span class="val" style="font-size: 18px;">18.52°N, 73.85°E</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="sirenAudio" loop>
+        <source src="https://www.soundjay.com/buttons/sounds/beep-01a.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const siren = document.getElementById('sirenAudio');
+
+        function triggerAccident() {
+            // 1. Start the laptop buzzer (Siren Ringtone)
+            siren.play();
+
+            // 2. Visual Alert Updates
+            document.getElementById('statusHeader').classList.add('emergency-bg');
+            document.getElementById('dataCard').classList.add('emergency-bg');
+            document.getElementById('alertTitle').innerText = "🚨 ACCIDENT DETECTED! 🚨";
+            document.getElementById('alertTitle').classList.add('flashing');
+            document.getElementById('sys-status').innerText = "● EMERGENCY ACTIVE";
+            document.getElementById('sys-status').style.color = "red";
+            document.getElementById('accVal').innerText = "4.55 G"; // High impact simulation
+
+            // 3. Send WhatsApp Alert
+            const phone = "919403881406";
+            const msg = encodeURIComponent("🚨 *URGENT: ACCIDENT DETECTED* 🚨\n\nSensor: MPU6050 Impact High\nTemp: 29°C\nLocation: JSPM JSCOE\nMaps: https://www.google.com/maps?q=18.5204,73.8567");
+            
+            // Open WhatsApp after 1.5 seconds so user hears siren first
+            setTimeout(() => {
+                window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+            }, 1500);
+        }
+
+        function stopSiren() {
+            siren.pause();
+            siren.currentTime = 0;
+            
+            // Reset UI
+            document.getElementById('statusHeader').classList.remove('emergency-bg');
+            document.getElementById('dataCard').classList.remove('emergency-bg');
+            document.getElementById('alertTitle').innerText = "Safety Monitoring System";
+            document.getElementById('alertTitle').classList.remove('flashing');
+            document.getElementById('sys-status').innerText = "● STANDBY";
+            document.getElementById('sys-status').style.color = "#2ecc71";
+        }
+    </script>
+</body>
+</html>
